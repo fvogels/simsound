@@ -76,31 +76,16 @@ def draw_ray_tree(screen, ray_tree: RayTree, block_size: int):
         draw(ray_tree.position, child)
 
 
-def cast_sound_rays(grid: Grid, origin: pygame.Vector2, steps: int = 1) -> list[Tuple[pygame.Vector2, pygame.Vector2]]:
-    result: list[Tuple[pygame.Vector2, pygame.Vector2]] = []
-
-    if steps > 0:
-        for phi in range(0, 360, 10):
-            angle = math.radians(phi)
-            direction = pygame.Vector2(math.cos(angle), math.sin(angle))
-            ray = Ray(origin, direction)
-            hit = grid.find_hit(ray)
-            if hit is not None:
-                result.append((origin, hit.position))
-
-    return result
-
-
 def rebuild_tree():
     global ray_tree
-    ray_tree = build_ray_tree(grid, position, 12, 50, 2)
+    ray_tree = build_ray_tree(grid, player_position, 12, 50, 2)
 
+
+grid = Grid(50, 50)
+block_size = 16
+player_position = pygame.Vector2(1.5, 1.5)
 ray_tree: RayTree
-
-grid = Grid(10, 10)
-block_size = 64
-position = pygame.Vector2(1, 1)
-# rays = cast_sound_rays(grid, position)
+audio_source: pygame.Vector2 = pygame.Vector2(0, 0)
 rebuild_tree()
 
 pygame.init()
@@ -118,18 +103,21 @@ while running:
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("black")
 
+    pressed_keys = pygame.key.get_pressed()
+    if pressed_keys[pygame.K_a]:
+        x, y = pygame.mouse.get_pos()
+        audio_source = pygame.Vector2(x / block_size, y / block_size)
+
     if pygame.mouse.get_pressed()[0]:
         sx, sy = pygame.mouse.get_pos()
-        x = sx / block_size
-        y = sy / block_size
-        position = pygame.Vector2(x, y)
+        player_position = pygame.Vector2(sx / block_size, sy / block_size)
         rebuild_tree()
 
-    if pygame.mouse.get_just_pressed()[2]:
+    if pygame.mouse.get_pressed()[2]:
         x, y = pygame.mouse.get_pos()
         x //= block_size
         y //= block_size
-        grid[Position(x, y)] = not grid[Position(x, y)]
+        grid[Position(x, y)] = not pressed_keys[pygame.K_LSHIFT]
         rebuild_tree()
 
     for y in range(grid.Height):
@@ -137,10 +125,10 @@ while running:
             if grid[Position(x, y)]:
                 pygame.draw.rect(screen, "blue", (x * block_size, y * block_size, block_size, block_size))
 
-    # for (p, q) in rays:
-    #     pygame.draw.line(screen, "red", (int(p.x * block_size), int(p.y * block_size)), (int(q.x * block_size), int(q.y * block_size)))
 
     draw_ray_tree(screen, ray_tree, block_size)
+    pygame.draw.circle(screen, "red", (player_position.x * block_size, player_position.y * block_size), 5)
+    pygame.draw.circle(screen, "green", (audio_source.x * block_size, audio_source.y * block_size), 5)
 
     # flip() the display to put your work on screen
     pygame.display.flip()

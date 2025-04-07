@@ -106,3 +106,12 @@ class Grid:
             if hit.distance > minimum_distance:
                 return hit
         return None
+
+    def no_obstacles_between(self, start: Vector2, stop: Vector2) -> bool:
+        ray = Ray(start, stop - start)
+        for hit in self.find_hits(ray):
+            if hit.distance < 1:
+                return False
+            else:
+                return True
+        return True
