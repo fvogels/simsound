@@ -1,46 +1,19 @@
-from typing import Tuple
+from typing import Iterable, Optional, Tuple
 from simsound.intersections import Intersection, Direction, find_grid_intersections, Vector2, Ray
 import math
+from dataclasses import dataclass
 
 
+@dataclass
 class Position:
-    __x: int
-    __y: int
+    x: int
+    y: int
 
-    def __init__(self, x: int, y: int):
-        self.__x = x
-        self.__y = y
-
-    @property
-    def x(self) -> int:
-        return self.__x
-
-    @property
-    def y(self) -> int:
-        return self.__y
-
-
+@dataclass
 class Hit:
-    __position: Vector2
-    __normal: Vector2
-    __reflection: float
-
-    def __init__(self, position: Vector2, normal: Vector2, reflection: float):
-        self.__position = position
-        self.__normal = normal
-        self.__reflection = reflection
-
-    @property
-    def position(self) -> Vector2:
-        return self.__position
-
-    @property
-    def normal(self) -> Vector2:
-        return self.__normal
-
-    @property
-    def reflection(self) -> float:
-        return self.__reflection
+    position: Vector2
+    reflection: float
+    distance: float
 
 
 class Grid:
@@ -79,27 +52,42 @@ class Grid:
         y = int(position.y)
         return self.__contains_block(Position(x-1, y)) or self.__contains_block(Position(x, y))
 
+    def __outside_grid(self, position: Vector2) -> bool:
+        return not self.__inside_grid(position)
+
+    def __inside_grid(self, position: Vector2) -> bool:
+        return 0 <= position.x <= self.Width and 0 <= position.y <= self.Height
+
     def __on_horizontal_border(self, position: Vector2) -> bool:
-        y = round(position.y)
-        return y == 0 or y == self.Height
+        return round(position.y) == 0 or round(position.y) == self.Height
 
     def __on_vertical_border(self, position: Vector2) -> bool:
-        x = round(position.x)
-        return x == 0 or x == self.Width
+        return round(position.x) == 0 or round(position.x) == self.Width
 
-    def find_hit(self, ray: Ray) -> Hit:
+    def find_hits(self, ray: Ray) -> Iterable[Hit]:
         for intersection in find_grid_intersections(ray):
             position = ray.at(intersection.distance)
             if intersection.direction == Direction.HORIZONTAL:
-                normal = Vector2(0, -math.copysign(1, ray.direction.y))
-                if self.__hits_horizontally(position):
-                    return Hit(position, normal, 1)
                 if self.__on_horizontal_border(position):
-                    return Hit(position, normal, 0)
+                    break
+                above_position = Position(math.floor(position.x), round(position.y) - 1)
+                below_position = Position(math.floor(position.x), round(position.y))
+                block_above = self.__contains_block(above_position)
+                block_below = self.__contains_block(below_position)
+                if block_above != block_below:
+                    yield Hit(position, 1, intersection.distance)
             else:
-                normal = Vector2(-math.copysign(1, ray.direction.x))
-                if self.__hits_vertically(position):
-                    return Hit(position, normal, 1)
                 if self.__on_vertical_border(position):
-                    return Hit(position, normal, 0)
-        raise ValueError("Should never happen")
+                    break
+
+                block_left = self.__contains_block(Position(round(position.x) - 1, math.floor(position.y)))
+                block_right = self.__contains_block(Position(round(position.x), math.floor(position.y)))
+                if block_left != block_right:
+                    yield Hit(position, 1, intersection.distance)
+
+
+    def find_hit(self, ray: Ray, minimum_distance: float = 0.01) -> Optional[Hit]:
+        for hit in self.find_hits(ray):
+            if hit.distance > minimum_distance:
+                return hit
+        return None
