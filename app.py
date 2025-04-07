@@ -93,7 +93,7 @@ def cast_sound_rays(grid: Grid, origin: pygame.Vector2, steps: int = 1) -> list[
 
 def rebuild_tree():
     global ray_tree
-    ray_tree = build_ray_tree(grid, position, 12, 50, 1)
+    ray_tree = build_ray_tree(grid, position, 12, 50, 2)
 
 ray_tree: RayTree
 

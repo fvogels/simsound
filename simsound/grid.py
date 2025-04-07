@@ -70,19 +70,34 @@ class Grid:
             if intersection.direction == Direction.HORIZONTAL:
                 if self.__on_horizontal_border(position):
                     break
+
                 above_position = Position(math.floor(position.x), round(position.y) - 1)
                 below_position = Position(math.floor(position.x), round(position.y))
-                block_above = self.__contains_block(above_position)
-                block_below = self.__contains_block(below_position)
-                if block_above != block_below:
+
+                if ray.direction.y > 0:
+                    exited_block = self.__contains_block(above_position)
+                    entered_block = self.__contains_block(below_position)
+                else:
+                    exited_block = self.__contains_block(below_position)
+                    entered_block = self.__contains_block(above_position)
+
+                if not exited_block and entered_block:
                     yield Hit(position, 1, intersection.distance)
             else:
                 if self.__on_vertical_border(position):
                     break
 
-                block_left = self.__contains_block(Position(round(position.x) - 1, math.floor(position.y)))
-                block_right = self.__contains_block(Position(round(position.x), math.floor(position.y)))
-                if block_left != block_right:
+                left_position = Position(round(position.x) - 1, math.floor(position.y))
+                right_position = Position(round(position.x), math.floor(position.y))
+
+                if ray.direction.x > 0:
+                    exited_block = self.__contains_block(left_position)
+                    entered_block = self.__contains_block(right_position)
+                else:
+                    exited_block = self.__contains_block(right_position)
+                    entered_block = self.__contains_block(left_position)
+
+                if not exited_block and entered_block:
                     yield Hit(position, 1, intersection.distance)
 
 
