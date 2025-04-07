@@ -38,6 +38,7 @@ def audio_test():
         sounddevice.sleep(int(duration * 1000))
 
 
+
 def cast_sound_rays(grid: Grid, origin: pygame.Vector2, steps: int = 1) -> list[Tuple[pygame.Vector2, pygame.Vector2]]:
     result: list[Tuple[pygame.Vector2, pygame.Vector2]] = []
 
@@ -46,8 +47,8 @@ def cast_sound_rays(grid: Grid, origin: pygame.Vector2, steps: int = 1) -> list[
             angle = math.radians(phi)
             direction = pygame.Vector2(math.cos(angle), math.sin(angle))
             ray = Ray(origin, direction)
-            collision, reflected = grid.find_hit(ray)
-            result.append((origin, collision))
+            hit = grid.find_hit(ray)
+            result.append((origin, hit.position))
 
     return result
 

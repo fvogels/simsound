@@ -1,5 +1,6 @@
 from typing import Tuple
 from simsound.intersections import Intersection, Direction, find_grid_intersections, Vector2, Ray
+import math
 
 
 class Position:
@@ -17,6 +18,29 @@ class Position:
     @property
     def y(self) -> int:
         return self.__y
+
+
+class Hit:
+    __position: Vector2
+    __normal: Vector2
+    __reflection: float
+
+    def __init__(self, position: Vector2, normal: Vector2, reflection: float):
+        self.__position = position
+        self.__normal = normal
+        self.__reflection = reflection
+
+    @property
+    def position(self) -> Vector2:
+        return self.__position
+
+    @property
+    def normal(self) -> Vector2:
+        return self.__normal
+
+    @property
+    def reflection(self) -> float:
+        return self.__reflection
 
 
 class Grid:
@@ -63,17 +87,19 @@ class Grid:
         x = round(position.x)
         return x == 0 or x == self.Width
 
-    def find_hit(self, ray: Ray) -> Tuple[Vector2, bool]:
+    def find_hit(self, ray: Ray) -> Hit:
         for intersection in find_grid_intersections(ray):
             position = ray.at(intersection.distance)
             if intersection.direction == Direction.HORIZONTAL:
+                normal = Vector2(0, -math.copysign(1, ray.direction.y))
                 if self.__hits_horizontally(position):
-                    return position, True
+                    return Hit(position, normal, 1)
                 if self.__on_horizontal_border(position):
-                    return position, False
+                    return Hit(position, normal, 0)
             else:
+                normal = Vector2(-math.copysign(1, ray.direction.x))
                 if self.__hits_vertically(position):
-                    return position, True
+                    return Hit(position, normal, 1)
                 if self.__on_vertical_border(position):
-                    return position, False
+                    return Hit(position, normal, 0)
         raise ValueError("Should never happen")
