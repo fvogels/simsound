@@ -155,6 +155,7 @@ buffer = np.zeros((BUFFER_SIZE, 2), dtype=np.float64)
 sample_index = 0
 def audio_callback(output, frames, time, status):
     global sample_index, sample_rate, samples
+    total_volume = 0
 
     buffer.fill(0)
     for audio_reception in audio_receptions:
@@ -163,10 +164,13 @@ def audio_callback(output, frames, time, status):
             start = sample_index - int(distance * 1000)
             stop = start + frames
             volume = min(1, 1 / distance)
+            if total_volume + volume > 1:
+                break
             if start < 0:
                 buffer[-start:] += samples[:stop] * volume
             else:
                 buffer[:] += samples[start:stop] * volume
+            total_volume += volume
 
     np.clip(buffer, -1, 1)
     output[:] = buffer.astype(np.int16)
