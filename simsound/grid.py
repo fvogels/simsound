@@ -71,8 +71,8 @@ class Grid:
                 if self.__on_horizontal_border(position):
                     break
 
-                above_position = Position(math.floor(position.x), round(position.y) - 1)
-                below_position = Position(math.floor(position.x), round(position.y))
+                above_position = Position(math.floor(position.x), intersection.y - 1)
+                below_position = Position(math.floor(position.x), intersection.y)
 
                 if ray.direction.y > 0:
                     exited_block = self.__contains_block(above_position)
@@ -83,12 +83,12 @@ class Grid:
 
                 if not exited_block and entered_block:
                     yield Hit(position, 1, intersection.distance)
-            else:
+            elif isinstance(intersection, VerticalIntersection):
                 if self.__on_vertical_border(position):
                     break
 
-                left_position = Position(round(position.x) - 1, math.floor(position.y))
-                right_position = Position(round(position.x), math.floor(position.y))
+                left_position = Position(intersection.x - 1, math.floor(position.y))
+                right_position = Position(intersection.x, math.floor(position.y))
 
                 if ray.direction.x > 0:
                     exited_block = self.__contains_block(left_position)
@@ -99,7 +99,8 @@ class Grid:
 
                 if not exited_block and entered_block:
                     yield Hit(position, 1, intersection.distance)
-
+            else:
+                raise NotImplementedError("Unknown intersection type")
 
     def find_hit(self, ray: Ray, minimum_distance: float = 0.01) -> Optional[Hit]:
         for hit in self.find_hits(ray):
