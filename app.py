@@ -102,9 +102,35 @@ def draw_ray_tree(screen, ray_tree: RayTree, block_size: int):
     draw(ray_tree)
 
 
-def rebuild_tree():
-    global ray_tree, audio_sources
+@dataclass
+class AudioReception:
+    audio_source: AudioSource
+    distance: float
+
+
+def compute_incoming_audio(ray_tree: RayTree) -> list[AudioReception]:
+    incoming_audio = []
+
+    def compute(tree: RayTree, extra_distance: float):
+        nonlocal incoming_audio
+        for audio_source in tree.audio_source:
+            distance = tree.position.distance_to(audio_source.position) + extra_distance
+            incoming_audio.append(AudioReception(audio_source, distance))
+
+        for subtree in tree.subtrees:
+            compute(subtree, extra_distance + tree.position.distance_to(subtree.position))
+
+    compute(ray_tree, 0)
+
+    incoming_audio.sort(key=lambda x: x.distance, reverse=True)
+    print(incoming_audio)
+    return incoming_audio
+
+
+def recompute():
+    global ray_tree, audio_sources, audio_receptions
     ray_tree = build_ray_tree(grid, audio_sources, player_position, 12, 50, 2)
+    audio_receptions = compute_incoming_audio(ray_tree)
 
 
 grid = Grid(10, 10)
@@ -112,7 +138,8 @@ block_size = 64
 player_position = pygame.Vector2(1.5, 1.5)
 ray_tree: RayTree
 audio_sources: list[AudioSource] = [AudioSource(pygame.Vector2(1.5, 1.5))]
-rebuild_tree()
+audio_receptions: list[AudioReception] = []
+recompute()
 
 pygame.init()
 screen = pygame.display.set_mode((grid.Width * block_size, grid.Height * block_size))
@@ -133,19 +160,19 @@ while running:
     if pressed_keys[pygame.K_a]:
         x, y = pygame.mouse.get_pos()
         audio_sources[0].position = pygame.Vector2(x / block_size, y / block_size)
-        rebuild_tree()
+        recompute()
 
     if pygame.mouse.get_pressed()[0]:
         sx, sy = pygame.mouse.get_pos()
         player_position = pygame.Vector2(sx / block_size, sy / block_size)
-        rebuild_tree()
+        recompute()
 
     if pygame.mouse.get_pressed()[2]:
         x, y = pygame.mouse.get_pos()
         x //= block_size
         y //= block_size
         grid[Position(x, y)] = not pressed_keys[pygame.K_LSHIFT]
-        rebuild_tree()
+        recompute()
 
     for y in range(grid.Height):
         for x in range(grid.Width):
