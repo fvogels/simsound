@@ -40,13 +40,30 @@ def audio_test():
         sounddevice.sleep(int(duration * 1000))
 
 
+
+class AudioSource:
+    __position: pygame.Vector2
+
+    def __init__(self, position: pygame.Vector2):
+        self.__position = position
+
+    @property
+    def position(self) -> pygame.Vector2:
+        return self.__position
+
+    @position.setter
+    def position(self, value: pygame.Vector2):
+        self.__position = value
+
+
 @dataclass
 class RayTree:
     position: pygame.Vector2
     subtrees : list[RayTree]
+    audio_source: list[AudioSource]
 
 
-def build_ray_tree(grid: Grid, origin: pygame.Vector2, branching_factor: int, maximum_distance: float, maximum_steps: int) -> RayTree:
+def build_ray_tree(grid: Grid, audio_sources: list[AudioSource], origin: pygame.Vector2, branching_factor: int, maximum_distance: float, maximum_steps: int) -> RayTree:
     subtrees = []
 
     if maximum_steps > 0:
@@ -59,33 +76,42 @@ def build_ray_tree(grid: Grid, origin: pygame.Vector2, branching_factor: int, ma
             if hit is not None:
                 distance = origin.distance_to(hit.position)
                 if hit.reflection > 0 and 0.01 < distance < maximum_distance:
-                    subtree = build_ray_tree(grid, hit.position, branching_factor, maximum_distance - distance, maximum_steps-1)
+                    subtree = build_ray_tree(grid, audio_sources, hit.position, branching_factor, maximum_distance - distance, maximum_steps-1)
                     subtrees.append(subtree)
 
-    return RayTree(origin, subtrees)
+    reachable_audio_sources = [audio_source for audio_source in audio_sources if audio_source.position == origin or grid.no_obstacles_between(origin, audio_source.position)]
+
+    return RayTree(origin, subtrees, reachable_audio_sources)
 
 
 def draw_ray_tree(screen, ray_tree: RayTree, block_size: int):
-    def draw(origin: pygame.Vector2, subtree: RayTree):
-        start = (int(origin.x * block_size), int(origin.y * block_size))
-        stop = (int(subtree.position.x * block_size), int(subtree.position.y * block_size))
-        pygame.draw.line(screen, "red", start, stop)
-        for child in subtree.subtrees:
-            draw(subtree.position, child)
-    for child in ray_tree.subtrees:
-        draw(ray_tree.position, child)
+    def draw(tree: RayTree):
+        for child in tree.subtrees:
+            start = (int(tree.position.x * block_size), int(tree.position.y * block_size))
+            stop = (int(child.position.x * block_size), int(child.position.y * block_size))
+            pygame.draw.line(screen, "red", start, stop)
+
+        for audio_source in tree.audio_source:
+            start = (int(tree.position.x * block_size), int(tree.position.y * block_size))
+            stop = (int(audio_source.position.x * block_size), int(audio_source.position.y * block_size))
+            pygame.draw.line(screen, "green", start, stop)
+
+        for subtree in tree.subtrees:
+            draw(subtree)
+
+    draw(ray_tree)
 
 
 def rebuild_tree():
-    global ray_tree
-    ray_tree = build_ray_tree(grid, player_position, 12, 50, 2)
+    global ray_tree, audio_sources
+    ray_tree = build_ray_tree(grid, audio_sources, player_position, 12, 50, 2)
 
 
 grid = Grid(50, 50)
 block_size = 16
 player_position = pygame.Vector2(1.5, 1.5)
 ray_tree: RayTree
-audio_source: pygame.Vector2 = pygame.Vector2(0, 0)
+audio_sources: list[AudioSource] = [AudioSource(pygame.Vector2(1.5, 1.5))]
 rebuild_tree()
 
 pygame.init()
@@ -106,7 +132,8 @@ while running:
     pressed_keys = pygame.key.get_pressed()
     if pressed_keys[pygame.K_a]:
         x, y = pygame.mouse.get_pos()
-        audio_source = pygame.Vector2(x / block_size, y / block_size)
+        audio_sources[0].position = pygame.Vector2(x / block_size, y / block_size)
+        rebuild_tree()
 
     if pygame.mouse.get_pressed()[0]:
         sx, sy = pygame.mouse.get_pos()
@@ -128,7 +155,8 @@ while running:
 
     draw_ray_tree(screen, ray_tree, block_size)
     pygame.draw.circle(screen, "red", (player_position.x * block_size, player_position.y * block_size), 5)
-    pygame.draw.circle(screen, "green", (audio_source.x * block_size, audio_source.y * block_size), 5)
+    for audio_source in audio_sources:
+        pygame.draw.circle(screen, "green", (audio_source.position.x * block_size, audio_source.position.y * block_size), 5)
 
     # flip() the display to put your work on screen
     pygame.display.flip()
