@@ -107,8 +107,8 @@ def rebuild_tree():
     ray_tree = build_ray_tree(grid, audio_sources, player_position, 12, 50, 2)
 
 
-grid = Grid(50, 50)
-block_size = 16
+grid = Grid(10, 10)
+block_size = 64
 player_position = pygame.Vector2(1.5, 1.5)
 ray_tree: RayTree
 audio_sources: list[AudioSource] = [AudioSource(pygame.Vector2(1.5, 1.5))]

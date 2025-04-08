@@ -15,6 +15,12 @@ class Hit:
     reflection: float
     distance: float
 
+@dataclass
+class Transition:
+    position: Vector2
+    distance: float
+    exited_block: bool
+    entered_block: bool
 
 class Grid:
     __grid: list[list[bool]]
@@ -64,7 +70,7 @@ class Grid:
     def __on_vertical_border(self, position: Vector2) -> bool:
         return round(position.x) == 0 or round(position.x) == self.Width
 
-    def find_hits(self, ray: Ray) -> Iterable[Hit]:
+    def find_transitions(self, ray: Ray) -> Iterable[Transition]:
         for intersection in find_grid_intersections(ray):
             position = ray.at(intersection.distance)
             if isinstance(intersection, HorizontalIntersection):
@@ -81,8 +87,8 @@ class Grid:
                     exited_block = self.__contains_block(below_position)
                     entered_block = self.__contains_block(above_position)
 
-                if not exited_block and entered_block:
-                    yield Hit(position, 1, intersection.distance)
+                if exited_block != entered_block:
+                    yield Transition(position, intersection.distance, exited_block, entered_block)
             elif isinstance(intersection, VerticalIntersection):
                 if self.__on_vertical_border(position):
                     break
@@ -97,10 +103,15 @@ class Grid:
                     exited_block = self.__contains_block(right_position)
                     entered_block = self.__contains_block(left_position)
 
-                if not exited_block and entered_block:
-                    yield Hit(position, 1, intersection.distance)
+                if exited_block != entered_block:
+                    yield Transition(position, intersection.distance, exited_block, entered_block)
             else:
                 raise NotImplementedError("Unknown intersection type")
+
+    def find_hits(self, ray: Ray) -> Iterable[Hit]:
+        for transition in self.find_transitions(ray):
+            if not transition.exited_block and transition.entered_block:
+                yield Hit(transition.position, 1, transition.distance)
 
     def find_hit(self, ray: Ray, minimum_distance: float = 0.01) -> Optional[Hit]:
         for hit in self.find_hits(ray):
@@ -110,9 +121,10 @@ class Grid:
 
     def no_obstacles_between(self, start: Vector2, stop: Vector2) -> bool:
         ray = Ray(start, stop - start)
-        for hit in self.find_hits(ray):
-            if 0.01 < hit.distance < 1:
-                return False
-            else:
-                return True
+        for transition in self.find_transitions(ray):
+            if transition.distance > 0.01:
+                if transition.distance < 1:
+                    return False
+                else:
+                    return True
         return True
