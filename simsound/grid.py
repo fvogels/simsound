@@ -110,7 +110,7 @@ class Grid:
     def no_obstacles_between(self, start: Vector2, stop: Vector2) -> bool:
         ray = Ray(start, stop - start)
         for hit in self.find_hits(ray):
-            if hit.distance < 1:
+            if 0.01 < hit.distance < 1:
                 return False
             else:
                 return True
