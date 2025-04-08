@@ -1,5 +1,5 @@
 from typing import Iterable, Optional, Tuple
-from simsound.intersections import Intersection, Direction, find_grid_intersections, Vector2, Ray
+from simsound.intersections import HorizontalIntersection, VerticalIntersection, find_grid_intersections, Vector2, Ray
 import math
 from dataclasses import dataclass
 
@@ -67,7 +67,7 @@ class Grid:
     def find_hits(self, ray: Ray) -> Iterable[Hit]:
         for intersection in find_grid_intersections(ray):
             position = ray.at(intersection.distance)
-            if intersection.direction == Direction.HORIZONTAL:
+            if isinstance(intersection, HorizontalIntersection):
                 if self.__on_horizontal_border(position):
                     break
 
