@@ -157,12 +157,12 @@ def audio_callback(output, frames, time, status):
     global sample_index, sample_rate, samples
 
     buffer.fill(0)
-    for audio_reception in audio_receptions[:5]:
+    for audio_reception in audio_receptions:
         distance = audio_reception.distance
         if distance > 0:
             start = sample_index - int(distance * 1000)
             stop = start + frames
-            volume = 1 / distance
+            volume = min(1, 1 / distance)
             if start < 0:
                 buffer[-start:] += samples[:stop] * volume
             else:
