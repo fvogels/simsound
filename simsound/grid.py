@@ -108,15 +108,12 @@ class Grid:
             else:
                 raise NotImplementedError("Unknown intersection type")
 
-    def find_hits(self, ray: Ray) -> Iterable[Hit]:
+    def find_hit(self, ray) -> Optional[Hit]:
         for transition in self.find_transitions(ray):
             if not transition.exited_block and transition.entered_block:
-                yield Hit(transition.position, 1, transition.distance)
-
-    def find_hit(self, ray: Ray, minimum_distance: float = 0.01) -> Optional[Hit]:
-        for hit in self.find_hits(ray):
-            if hit.distance > minimum_distance:
-                return hit
+                return Hit(transition.position, 1, transition.distance)
+            if transition.distance > 0.01:
+                return None
         return None
 
     def no_obstacles_between(self, start: Vector2, stop: Vector2) -> bool:
