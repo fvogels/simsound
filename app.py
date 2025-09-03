@@ -15,7 +15,7 @@ def audio_test():
     duration = 5  # seconds
     frequency = 44100  # Hz
 
-    sample_rate, samples = wavfile.read('./cash.wav')
+    sample_rate, samples = wavfile.read('./sound.wav')
     # samples = samples[:, 0]  # Use only one channel if stereo
     sample_count = frequency * duration
     samples = samples[:sample_count]
@@ -148,7 +148,7 @@ clock = pygame.time.Clock()
 running = True
 BUFFER_SIZE = 16384
 
-sample_rate, samples = wavfile.read('./cash.wav')
+sample_rate, samples = wavfile.read('./sound.wav')
 samples = samples.astype(np.float64)
 buffer = np.zeros((BUFFER_SIZE, 2), dtype=np.float64)
 
